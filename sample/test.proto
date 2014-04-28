@@ -1,0 +1,10 @@
+message MyRequest {
+  enum Type {
+    TYPE_A = 0;
+    TYPE_B = 1;
+    TYPE_C = 2;
+  }
+    required Type type = 1;
+    required int32 a = 2;
+    optional string b = 3;
+}
