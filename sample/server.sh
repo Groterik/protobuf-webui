@@ -4,4 +4,4 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 cd $DIR
 protoc --python_out=./ -I./ ./test.proto
-PYTHONPATH=../ python server.py
+PYTHONPATH=${PYTHONPATH}:../ python server.py

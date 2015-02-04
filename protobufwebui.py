@@ -3,6 +3,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler
 import google.protobuf
 from google.protobuf.descriptor import FieldDescriptor as FD
 import base64
+import urlparse
 
 def setAttrByPath(obj, path, value):
     att = getattr(obj, path[0])
@@ -43,9 +44,18 @@ class ProtobufUIHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type',	'text/html')
             self.end_headers()
+            qs = {}
+            path = self.path
+            if '?' in path:
+                path, tmp = path.split('?', 1)
+                qs = urlparse.parse_qs(tmp)
+                print path, qs
+                self.parseGET(qs)
+                return
+
             self.wfile.write('<html><body>')
 
-            self.wfile.write('<form action=\"/submit\" enctype=\"multipart/form-data\" method=\"POST\">')
+            self.wfile.write('<form action=\"' + path + '\" enctype=\"multipart/form-data\" method=\"get\">')
 
             self.printHeader()
 
@@ -73,7 +83,7 @@ class ProtobufUIHandler(BaseHTTPRequestHandler):
             self.wfile.write(' onchange=\"this.checked=true;\"')
             self.wfile.write(' checked=\"\"checked\"')
         else:
-            self.wfile.write(' onchange=\"document.getElementById(\'' + name + '\').disabled = !this.checked;\"')
+            self.wfile.write(' onchange=\"if (!this.checked) {document.getElementById(\'' + name + '\').setAttribute(\'disabled\', \'disabled\');} else {document.getElementById(\'' + name + '\').removeAttribute(\'disabled\');}\"')
 
         self.wfile.write('/>');
 
@@ -81,7 +91,7 @@ class ProtobufUIHandler(BaseHTTPRequestHandler):
         self.wfile.write(fd.name);
 
     def printEnum(self, name, fd):
-        self.wfile.write('<select name=\"' + name + '\" required ')
+        self.wfile.write('<select name=\"' + name + '\" required id=\"' + name + '\"')
         if not fd.label == 2:
             self.wfile.write('disabled')
         self.wfile.write('>')
@@ -146,14 +156,12 @@ class ProtobufUIHandler(BaseHTTPRequestHandler):
 
         self.wfile.write('</body></html>')
 
-    def do_POST(self):
+    def parseGET(self, qs):
         try:
-            ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
-            postvars = cgi.parse_multipart(self.rfile, pdict)
 
             req = ProtobufUIHandler.getRequestType()()
 
-            for k, v in postvars.iteritems():
+            for k, v in qs.iteritems():
                 path = k.split('.')
                 value = v[0]
                 if len(path) > 0 and path[0] == ProtobufUIHandler.getRequestType().DESCRIPTOR.name:
