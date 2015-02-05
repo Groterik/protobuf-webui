@@ -22,6 +22,12 @@ def getFDRecursive(d, path):
 def getFDByPath(obj, path):
     return getFDRecursive(obj.DESCRIPTOR, path)
 
+def isRequiredFD(fd):
+    return fd.label == 2
+
+def isOptionalFD(fd):
+    return fd.label == 1
+
 class ProtobufUIHandler(BaseHTTPRequestHandler):
     __depth = 0
     __requestType = type(int)
@@ -79,20 +85,20 @@ class ProtobufUIHandler(BaseHTTPRequestHandler):
     def printCheckbox(self, name, fd):
         self.wfile.write('<input type=\"checkbox\"')
 
-        if fd.label == 2:
+        if isRequiredFD(fd):
             self.wfile.write(' onchange=\"this.checked=true;\"')
             self.wfile.write(' checked=\"\"checked\"')
         else:
             self.wfile.write(' onchange=\"if (!this.checked) {document.getElementById(\'' + name + '\').setAttribute(\'disabled\', \'disabled\');} else {document.getElementById(\'' + name + '\').removeAttribute(\'disabled\');}\"')
 
-        self.wfile.write('/>');
+        self.wfile.write('/>')
 
     def printFieldName(self, name, fd):
-        self.wfile.write(fd.name);
+        self.wfile.write(fd.name)
 
     def printEnum(self, name, fd):
         self.wfile.write('<select name=\"' + name + '\" required id=\"' + name + '\"')
-        if not fd.label == 2:
+        if isOptionalFD(fd):
             self.wfile.write('disabled')
         self.wfile.write('>')
         enum_t = fd.enum_type
@@ -102,14 +108,14 @@ class ProtobufUIHandler(BaseHTTPRequestHandler):
 
     def printInputbox(self, name, fd):
         self.wfile.write('<input type=\"text\" name=\"' + name + '\" id=\"' + name + '\" value=\"\"')
-        if not fd.label == 2:
+        if isOptionalFD(fd):
             self.wfile.write(' disabled=\"disabled\"')
         self.wfile.write('/>')
 
 
     def printField(self, desc, prefix):
-        name = prefix + '.' + desc.name;
-        is_required = (desc.label == 2)
+        name = prefix + '.' + desc.name
+        is_required = isRequiredFD(desc)
 
         self.paddingOpen()
         self.printCheckbox(name, desc)
@@ -124,7 +130,7 @@ class ProtobufUIHandler(BaseHTTPRequestHandler):
 
 
     def printMessage(self, desc, prefix, disabled):
-        self.__depth += 1;
+        self.__depth += 1
 
         self.wfile.write('<fieldset name=\"' + prefix + '\" id=\"' + prefix + '\"')
         if disabled:
@@ -133,11 +139,11 @@ class ProtobufUIHandler(BaseHTTPRequestHandler):
         self.wfile.write('>')
 
         for f in desc.fields:
-            self.printField(f, prefix);
+            self.printField(f, prefix)
 
         self.wfile.write('</fieldset>')
 
-        self.__depth -= 1;
+        self.__depth -= 1
 
 
     def printPageSubmitted(self, req):
